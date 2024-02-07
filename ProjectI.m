@@ -1,3 +1,6 @@
+% ECE 6961 - Project Part I
+% Emma Dingman, Collin Griswold, Marlo Esperson
+
 clc
 clear all
 close all
@@ -15,7 +18,23 @@ numSymbols = N*M; % # of QPSK info symbols
 randSeq = rand(1, numSymbols);
 binaryData = (randSeq > 0.5);
 x = zeros(1, length(randSeq*4));
-cp = 5;
 
-x(1:4) = binaryData(13:16);
-x(5:20) = binaryData(1:16);
+for i = 0:length(binaryData)/2
+
+ if(binaryData(i+1)==binaryData(i+2))
+     re = 1;
+ else 
+     re = -1;
+ end
+if(x(i+1) == 0)
+    im = 1i;
+else
+    im = -1i;
+end
+x(i+1) = (1/sqrt(2))*[re+im];
+end
+
+% cp = 5;
+% 
+% x(1:4) = binaryData(13:16);
+% x(5:20) = binaryData(1:16);
