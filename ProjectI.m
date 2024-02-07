@@ -17,3 +17,5 @@ numSymbols = N*M; % # of QPSK info symbols
 % Generate rand binary data
 randSeq = rand(1, numSymbols);
 binaryData = (randSeq > 0.5);
+
+% Hello
