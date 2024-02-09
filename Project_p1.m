@@ -35,9 +35,9 @@ for n = 1:length(b)
         end
     end
 
-    s(n,1) = real(n,1) + 1j*imaginary(n,1);
+    d_tilde(n,1) = real(n,1) + 1j*imaginary(n,1);
 end
-s = (1/sqrt(2)).*s; % symbols
+d_tilde = (1/sqrt(2)).*d_tilde; % symbols
 
 % taps:
 h0 = 0.227;
@@ -60,11 +60,26 @@ for i = 1:M
 end
 F = (1/sqrt(M)) .* f_i_j; % F_N matrix
 
-x = F'.*s; % transmitted signal
+d = F'*d_tilde; % transmitted signal (IDFT)
+y = h*d; % received signal (time domain)
+y_tilde= F*y; % received signal (DFT)
 
-y = h*x; % received signal (time domain)
 
-Y = F*y; % received signal (freq domain)
+% verify correctness using one-tap equalizer:
+h_tilde = (F*h*F'); % freq domain channel
+h_tilde_diag = diag(h_tilde); % one tap equalizer (diagonal of h_tilde)
+d_tilde_Rx = y_tilde./h_tilde_k; % received symbols (equal to d_tilde)
+
+
+
+% alternate way to get y_tilde:
+% h_tilde = (F*h*F');
+% y_tilde = d_tilde.*h_tilde;
+% y_tilde = diag(y_tilde,0);
+
+
+
+
 
 
 % TESTING:
@@ -74,4 +89,3 @@ Y = F*y; % received signal (freq domain)
 
 % figure; [ch,w]=freqz([h0 h1 h2 h3 h4],1,'whole',2001);
 % plot(w/pi/2, 20*log10(abs(ch)));
-
