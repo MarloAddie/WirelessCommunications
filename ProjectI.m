@@ -14,9 +14,6 @@ binaryData = (randSeq > 0.5);
 
 
 
-real = binaryData(1:2:end);
-imag = binaryData(2:2:end);
-
 h_k = [1,2,3,4,5];
 
 % Create indexing for channel matrix based on knowlegde of signal
@@ -29,7 +26,11 @@ new_x = zeros(1, length(x)+cp);
 new_x(1:cp) = x((end-cp+1):end);
 new_x(cp+1:end) = x(1:end);
 
+
+
 % QPSK mapping
+real = binaryData(1:2:end);
+imag = binaryData(2:2:end);
 for i = 1:length(real)
     if (real(i) == imag(i))
         re = 1;
