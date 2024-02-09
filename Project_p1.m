@@ -68,7 +68,7 @@ y_tilde= F*y; % received signal (DFT)
 % verify correctness using one-tap equalizer:
 h_tilde = (F*h*F'); % freq domain channel
 h_tilde_diag = diag(h_tilde); % one tap equalizer (diagonal of h_tilde)
-d_tilde_Rx = y_tilde./h_tilde_k; % received symbols (equal to d_tilde)
+d_tilde_rx = y_tilde./h_tilde_diag; % received symbols (equal to d_tilde)
 
 
 
