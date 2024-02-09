@@ -1,91 +1,73 @@
-clc, clear, close all
+% ECE 6961 - Project Part I
+% Emma Dingman, Collin Griswold, Marlo Esperson
 
+clear all, clc, close all
 
-L = 5;
-M = 16;
-N = 4;
-cp = L-1;
+% Task 1: Understand CP-OFDM and ZP-OFDM
+% Generate a sequence of N*M QPSK information symbols d~ in the frequency
+% domain, where M = 16  is the number of subcarriers and N = 4 is the
+% number of OFDM symbols.
 
-numBits = N*M*2; % # of QPSK info symbols
+M = 16;           % # of subcarriers
+N = 4;            % # of OFDM symbols
+numSymbols = N*M; % # of QPSK info symbols
 
-% Generate rand binary data
-randSeq = rand(1, numBits);
-binaryData = (randSeq > 0.5);
+% create bits and map them to QPSK symbols:
+num=32;
+b=sign(randn(num,1));
+b = (b+1)/2;
+b = reshape(b,num/2,2);
 
-
-
-real = binaryData(1:2:end);
-imag = binaryData(2:2:end);
-
-
-% Create indexing for channel matrix based on knowlegde of signal
-x = zeros(1, M);
-for lk = 1:M
-    x(lk) = lk;
-end
-
-new_x = zeros(1, length(x)+cp);
-new_x(1:cp) = x((end-cp+1):end);
-new_x(cp+1:end) = x(1:end);
-
-% QPSK mapping
-d_tilde = zeros(length(real),1);
-for i = 1:length(real)
-    if (real(i) == imag(i))
-        re = 1;
+for n = 1:length(b)
+    if b(n,1) == 0
+        imaginary(n,1) = 1;
+        if b(n,2) == 0
+            real(n,1) = 1;
+        else
+            real(n,1) = -1;
+        end
     else
-        re = -1;
+        imaginary(n,1) = -1;
+        if b(n,2) == 0
+            real(n,1) = -1;
+        else
+            real(n,1) = 1;
+        end
     end
-    if (real(i) < 1)
-        im = 1i;
-    else
-        im = -1i;
-    end
-    d_tilde(i) = 1/sqrt(2)*(re+im);
+
+    d_tilde(n,1) = real(n,1) + 1j*imaginary(n,1);
+end
+d_tilde = (1/sqrt(2)).*d_tilde; % symbols
+
+% taps:
+h0 = 0.227;
+h1 = 0.46;
+h2 = 0.688;
+h3 = 0.46;
+h4 = 0.227;
+
+% create channel:
+h = [h0 0 0 0 0 0 0 0 0 0 0 0 h4 h3 h2 h1]; % first line (y5)
+for n = 2:16
+    h(n,:) = circshift(h(n-1,:),1); % channel matrix
 end
 
-h_k = [0.227,0.46,0.688,0.46,0.227];
-% channel modeling designed for a signal with a cyclic prefix
-h = zeros(M,M); % 16x16 matrix for the modeled channel
-for i = cp+2:M+cp+1 % start after the cyclic prefix (adds and removes cp in one step)
-    for k = 1:L % go through the taps
-        jk = new_x(i - k);  
-            h(i-5,jk) = h_k(k);
-    end
-end
-
- f_i_j = zeros(M,M);
 % generate F_N matrix:
 for i = 1:M
     for J = 1:M
         f_i_j(i,J) = exp((-1j*2*pi*(i-1)*(J-1))/M);
     end
 end
-
 F = (1/sqrt(M)) .* f_i_j; % F_N matrix
 
-F_I = F'*F;
-
-
-
-
-
-y_tilda = zeros(64,16);
-for sub = 1:4
-jklm = sub+(sub-1)*(16-1); % weird indexing shoudl fix
-dd = d_tilde(jklm:jklm+15,1);
-d = F'*dd; % transmitted signal
+d = F'*d_tilde; % transmitted signal (IDFT)
 y = h*d; % received signal (time domain)
-y_tilda(jklm:jklm+15,1) = F*y; % received signal (freq domain)
+y_tilde= F*y; % received signal (DFT)
 
-end
-
-y_tilde = y_tilda(1:16,1);
 
 % verify correctness using one-tap equalizer:
 h_tilde = (F*h*F'); % freq domain channel
-h_tilde_diag = diag(h_tilde,0); % one tap equalizer (diagonal of h_tilde)
+h_tilde_diag = diag(h_tilde); % one tap equalizer (diagonal of h_tilde)
 d_tilde_rx = y_tilde./h_tilde_diag; % received symbols (equal to d_tilde)
-
 
 
