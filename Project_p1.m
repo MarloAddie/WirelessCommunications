@@ -3,7 +3,7 @@ clc, clear, close all
 
 L = 5;
 M = 16;
-N=4;
+N = 4;
 cp = L-1;
 
 numBits = N*M*2; % # of QPSK info symbols
@@ -17,7 +17,6 @@ binaryData = (randSeq > 0.5);
 real = binaryData(1:2:end);
 imag = binaryData(2:2:end);
 
-h_k = [0.227,0.46,0.688,0.46,0.227];
 
 % Create indexing for channel matrix based on knowlegde of signal
 x = zeros(1, M);
@@ -30,6 +29,7 @@ new_x(1:cp) = x((end-cp+1):end);
 new_x(cp+1:end) = x(1:end);
 
 % QPSK mapping
+d_tilde = zeros(length(real),1);
 for i = 1:length(real)
     if (real(i) == imag(i))
         re = 1;
@@ -43,8 +43,8 @@ for i = 1:length(real)
     end
     d_tilde(i) = 1/sqrt(2)*(re+im);
 end
-d_tilde = transpose(d_tilde);
 
+h_k = [0.227,0.46,0.688,0.46,0.227];
 % channel modeling designed for a signal with a cyclic prefix
 h = zeros(M,M); % 16x16 matrix for the modeled channel
 for i = cp+2:M+cp+1 % start after the cyclic prefix (adds and removes cp in one step)
