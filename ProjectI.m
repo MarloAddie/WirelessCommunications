@@ -64,8 +64,6 @@ end
 
 F = (1/sqrt(M)) .* f_i_j; % F_N matrix
 
-F_I = F'*F;
-
 
 
 
