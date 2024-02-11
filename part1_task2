@@ -1,0 +1,68 @@
+clc, clear, close all
+
+
+L = 5;
+M = 16;
+N = 4;
+cp = L-1;
+
+numBits = N*M*2; % # of QPSK info symbols
+
+% Generate rand binary data
+randSeq = rand(1, numBits);
+binaryData = (randSeq > 0.5);
+
+real = binaryData(1:2:end);
+imag = binaryData(2:2:end);
+
+d_tilde = zeros(length(real),1);
+% QPSK mapping
+for i = 1:length(real)
+    if (real(i) == imag(i))
+        re = 1;
+    else
+        re = -1;
+    end
+    if (real(i) < 1)
+        im = 1i;
+    else
+        im = -1i;
+    end
+    d_tilde(i) = 1/sqrt(2)*(re+im);
+end
+
+
+ f_i_j = zeros(M,M);
+% generate F_N matrix:
+for i = 1:M
+    for J = 1:M
+        f_i_j(i,J) = exp((-1j*2*pi*(i-1)*(J-1))/M);
+    end
+end
+
+F = (1/sqrt(M)) .* f_i_j; % F_N matrix
+
+ghj = zeros((M+cp)*N+cp,1);
+y_tilda = zeros(64,16);
+for sub = 1:4
+jklm = sub+(sub-1)*(16-1); % weird indexing shoudl fix
+dd = d_tilde(jklm:jklm+15,1);
+d = F'*dd; % transmitted signal
+ghj(L+((sub-1)*(M+cp)):((M+cp)*sub)) = d;
+end
+
+count = 1;
+vbn = zeros(2016,1); % make better later
+for n = 1:2016+1
+    if(mod(n,24) == 0)
+        vbn(n) = ghj(count);
+        count = count + 1;
+    end
+end
+
+% beta = 0.125;
+% delay = 100;
+% 
+% baseband = conv(vbn,rcosdesign(beta,2*delay,24,'sqrt'));
+figure
+plot((fftshift(abs(fft(vbn)))));
