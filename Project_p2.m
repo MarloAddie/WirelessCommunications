@@ -73,7 +73,7 @@ figure; plot(frequency, abs(fftshift(fft(x_bb))))
 
 
 % Step 6:
-fc = 100e3; % carrier frequency 
+fc = 24e3; % carrier frequency 
 B = 8e3; % bandwidth
 Ts = 1/B; % sampling period
 ts = Ts/lambda;
