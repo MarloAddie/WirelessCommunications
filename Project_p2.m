@@ -83,6 +83,38 @@ for n = 0:length(x_bb)-1
 end
 x_pb = transpose(x_pb);
 
+t1 = 0.05;
+f0 = fc-4000;
+f1 = fc+4000;
+beta = (f1-f0)/t1;
+i = 0;
 
+for t = 0:1/Fs:1
+    i = i+1;
+    if t <= 0.05
+        f = f0+beta*t;
+        chirp(i) = cos(2*pi*f*t);
+    elseif t >=0.25 && t <= 0.3
+        f = f0+beta*t;
+        chirp(i) = cos(2*pi*f*t);
+    elseif t >=0.5 && t <= 0.55
+        f = f0+beta*t;
+        chirp(i) = cos(2*pi*f*t);
+    elseif t >= 0.75 && t <= 0.8
+        f = f0+beta*t;
+        chirp(i) = cos(2*pi*f*t);
+    else
+        chirp(i) = 0;
+    end
+end
 
+t = 0:1/Fs:1;
+figure
+plot(t, chirp)
 
+LFM = [chirp.'; x_pb; chirp.'];
+Nfft2 = 4096;
+
+figure
+colormap jet
+spectrogram(LFM, Nfft2, Nfft2*3/4, Nfft2, Fs, 'yaxis')
