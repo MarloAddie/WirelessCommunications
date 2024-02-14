@@ -4,10 +4,11 @@
 clear all, clc, close all
 
 % Parameters:
-L = 5; % # of taps
+L = 201; % # of taps
 M = 2048; % # of subcarriers
-N = 4; % # of OFDM symbols
+N = 1; % # of OFDM symbols
 numBits = M*2; % # of bits to generate M QPSK symbols
+Fs=192e3;
 lambda = 24; % oversampling rate
 beta = 0.125;
 delay = 100;
@@ -21,19 +22,19 @@ for n = 1:N
     % Generate random binary data
     binaryData = randi([0 1], numBits, 1);
     
-    real = binaryData(1:2:end);
-    imag = binaryData(2:2:end);
-    s = [real imag];
+    real_comp = binaryData(1:2:end);
+    imag_comp = binaryData(2:2:end);
+    s = [real_comp imag_comp];
     
     % QPSK mapping
-    d_tilde = zeros(length(real),1);
-    for i = 1:length(real)
-        if (real(i) == imag(i))
+    d_tilde = zeros(length(real_comp),1);
+    for i = 1:length(real_comp)
+        if (real_comp(i) == imag_comp(i))
             re = 1;
         else
             re = -1;
         end
-        if (real(i) < 1)
+        if (real_comp(i) < 1)
             im = 1i;
         else
             im = -1i;
@@ -48,7 +49,7 @@ for n = 1:N
 
     d = cat(1, d,d_i); % d for all OFDM symbols
 end
-x = [x;zeros(L-1,1)];
+x = [x;zeros(L-1,1)]; % add zeros to the back
 
 x_ovf = zeros((N*(L-1+M)+L-1)*lambda,1);
 i = 1;
@@ -60,15 +61,27 @@ for n = 0:(N*(L-1+M)+L-1)*lambda-1
 end
 
 R = rcosdesign(beta,span,lambda,'sqrt');
-x_bb = conv(x_ovf,R);
+%x_bb = conv(x_ovf,R);
+x_bb = filter(R,1,x_ovf);
 
 
-figure
-plot(abs(fftshift(fft(R))))
+% figure
+% plot(abs(fftshift(fft(R))))
+fft_x_bb=fftshift(fft(x_bb));
+frequency = [-length(fft_x_bb)/2:length(fft_x_bb)/2-1]*Fs/length(fft_x_bb);
+figure; plot(frequency, abs(fftshift(fft(x_bb))))
 
-figure
-plot(abs(fftshift(fft(x_bb))))
 
+% Step 6:
+fc = 100e3; % carrier frequency 
+B = 8e3; % bandwidth
+Ts = 1/B; % sampling period
+ts = Ts/lambda;
+
+for n = 0:length(x_bb)-1
+    x_pb(n+1) = real(x_bb(n+1)*exp(1j*2*pi*fc*n*ts));
+end
+x_pb = transpose(x_pb);
 
 
 
