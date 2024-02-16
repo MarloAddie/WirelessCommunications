@@ -1,68 +1,132 @@
-clc, clear, close all
+%% ECE 6961 - Project Part II
+% Emma Dingman, Collin Griswold, Marlo Esperson
 
+clear, clc, close all
 
-L = 5;
-M = 16;
-N = 4;
-cp = L-1;
+% Parameters:
+L = 201; % # of taps
+M = 2048; % # of subcarriers
+N = 1; % # of OFDM symbols
+numBits = M*2; % # of bits to generate M QPSK symbols
+Fs=192e3;
+lambda = 24; % oversampling rate
+beta = 0.125;
+delay = 100;
+span = 2*delay;
+fc = 24000;
 
-numBits = N*M*2; % # of QPSK info symbols
+x = [];
+d = [];
 
-% Generate rand binary data
-randSeq = rand(1, numBits);
-binaryData = (randSeq > 0.5);
-
-real = binaryData(1:2:end);
-imag = binaryData(2:2:end);
-
-d_tilde = zeros(length(real),1);
-% QPSK mapping
-for i = 1:length(real)
-    if (real(i) == imag(i))
-        re = 1;
-    else
-        re = -1;
+for n = 1:N
+    
+    % Generate random binary data
+    binaryData = randi([0 1], numBits, 1);
+    
+    real_comp = binaryData(1:2:end);
+    imag_comp = binaryData(2:2:end);
+    s = [real_comp imag_comp];
+    
+    % QPSK mapping
+    d_tilde = zeros(length(real_comp),1);
+    for i = 1:length(real_comp)
+        if (real_comp(i) == imag_comp(i))
+            re = 1;
+        else
+            re = -1;
+        end
+        if (real_comp(i) < 1)
+            im = 1i;
+        else
+            im = -1i;
+        end
+        d_tilde(i) = 1/sqrt(2)*(re+im); % QPSK symbols
     end
-    if (real(i) < 1)
-        im = 1i;
-    else
-        im = -1i;
-    end
-    d_tilde(i) = 1/sqrt(2)*(re+im);
+    
+    d_i = ifft(d_tilde); % time-domain symbols
+    
+    x_i = [zeros(L-1,1);d_i(:)]; % zero padding
+    x = cat(1, x,x_i); % x for all OFDM symbols
+
+    d = cat(1, d,d_i); % d for all OFDM symbols
 end
+x = [x;zeros(L-1,1)]; % add zeros to the back
+
+% x_ovf = zeros((N*(L-1+M)+L-1)*lambda,1);
+% i = 1;
+% for n = 0:(N*(L-1+M)+L-1)*lambda-1
+%     if mod(n,lambda) == 0
+%         x_ovf(n+1) = x(i);
+%         i = i+1;
+%     end
+% end
+
+x_ovf = upsample(x,24);
+
+R = rcosdesign(beta,span,lambda,'sqrt');
+%x_bb = conv(x_ovf,R);
+x_bb = filter(R,1,x_ovf);
 
 
- f_i_j = zeros(M,M);
-% generate F_N matrix:
-for i = 1:M
-    for J = 1:M
-        f_i_j(i,J) = exp((-1j*2*pi*(i-1)*(J-1))/M);
-    end
+% figure
+% plot(abs(fftshift(fft(R))))
+fft_x_bb=fftshift(fft(x_bb));
+frequency = [-length(fft_x_bb)/2:length(fft_x_bb)/2-1]*Fs/length(fft_x_bb);
+figure; plot(frequency, abs(fftshift(fft(x_bb))))
+
+
+% Step 6:
+fc = 24e3; % carrier frequency 
+B = 8e3; % bandwidth
+Ts = 1/B; % sampling period
+ts = Ts/lambda;
+
+for n = 0:length(x_bb)-1
+    x_pb(n+1) = real(x_bb(n+1)*exp(1j*2*pi*fc*n*ts));
 end
+x_pb = transpose(x_pb);
 
-F = (1/sqrt(M)) .* f_i_j; % F_N matrix
+f0 = fc-4000; % Start frequency in Hz
+f1 = fc+4000;
 
-ghj = zeros((M+cp)*N+cp,1);
-y_tilda = zeros(64,16);
-for sub = 1:4
-jklm = sub+(sub-1)*(16-1); % weird indexing shoudl fix
-dd = d_tilde(jklm:jklm+15,1);
-d = F'*dd; % transmitted signal
-ghj(L+((sub-1)*(M+cp)):((M+cp)*sub)) = d;
-end
+% Time vector for the total signal
+t = 0:1/Fs:0.05;
 
-count = 1;
-vbn = zeros(2016,1); % make better later
-for n = 1:2016+1
-    if(mod(n,24) == 0)
-        vbn(n) = ghj(count);
-        count = count + 1;
-    end
-end
+% Generate chirp signal for the first 0.05 seconds
+chirp_signal = transpose(chirp(t, f0, 0.05, 28000, 'linear'));
 
-% beta = 0.125;
-% delay = 100;
-% 
-% baseband = conv(vbn,rcosdesign(beta,2*delay,24,'sqrt'));
+sig = zeros(Fs*0.26,1);
+sig(1:length(chirp_signal)) = chirp_signal;
+sig = [sig;sig;sig;sig];
+
+
+LFM = [sig; x_pb; sig];
+
+Nfft2 = 4096;
+
 figure
-plot((fftshift(abs(fft(vbn)))));
+colormap jet
+spectrogram(LFM, Nfft2, Nfft2*3/4, Nfft2, Fs, 'yaxis')
+
+
+for N = 1:length(x_pb)
+    x_bb_tild_I(N) = x_pb(N)*cos(2*pi*fc*(N-1)*Ts);
+    x_bb_tild_Q(N) = x_pb(N)*sin(2*pi*fc*(N-1)*Ts);
+    x_bb_tild(N) = x_bb_tild_I(N)+1i*x_bb_tild_Q(N);
+end
+
+re_x_ovf = conv(transpose(x_bb_tild), R);
+
+delay = (span * (lambda-1))/2;
+
+re_xovf = re_x_ovf(delay:end);
+
+re_x = downsample(re_xovf,lambda);
+
+for k = 1: M+L
+    for n = 1:M+L
+        y(k) = re_x(n)*exp(-1i*2*pi*((n-1)*k)/M);
+    end
+end
+
+y = transpose(y);
