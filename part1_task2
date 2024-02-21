@@ -1,7 +1,7 @@
 %% ECE 6961 - Project Part II
 % Emma Dingman, Collin Griswold, Marlo Esperson
 
-clear, clc, close all
+clear all, clc, close all
 
 % Parameters:
 L = 201; % # of taps
@@ -13,7 +13,6 @@ lambda = 24; % oversampling rate
 beta = 0.125;
 delay = 100;
 span = 2*delay;
-fc = 24000;
 
 x = [];
 d = [];
@@ -64,8 +63,8 @@ x = [x;zeros(L-1,1)]; % add zeros to the back
 x_ovf = upsample(x,24);
 
 R = rcosdesign(beta,span,lambda,'sqrt');
-%x_bb = conv(x_ovf,R);
-x_bb = filter(R,1,x_ovf);
+% x_bb = conv(x_ovf,R);
+x_bb = filter(R,1,x_ovf); % convolution
 
 
 % figure
@@ -82,51 +81,56 @@ Ts = 1/B; % sampling period
 ts = Ts/lambda;
 
 for n = 0:length(x_bb)-1
-    x_pb(n+1) = real(x_bb(n+1)*exp(1j*2*pi*fc*n*ts));
+    x_pb(n+1,1) = real(x_bb(n+1)*exp(1i*2*pi*fc*n*ts));
 end
-x_pb = transpose(x_pb);
 
-f0 = fc-4000; % Start frequency in Hz
+t1 = 0.05;
+f0 = fc-4000;
 f1 = fc+4000;
+t= 0:1/Fs:0.05;
 
-% Time vector for the total signal
-t = 0:1/Fs:0.05;
+chirp_sig = chirp(t,f0,t1,f1);
+chirp_sig = [chirp_sig.';zeros((0.25*Fs)-length(chirp_sig),1)];
+chirp_sig = [chirp_sig;chirp_sig;chirp_sig;chirp_sig];
 
-% Generate chirp signal for the first 0.05 seconds
-chirp_signal = transpose(chirp(t, f0, 0.05, 28000, 'linear'));
+t = 0:1/Fs:1-1/Fs;
+figure
+plot(t, chirp_sig)
 
-sig = zeros(Fs*0.26,1);
-sig(1:length(chirp_signal)) = chirp_signal;
-sig = [sig;sig;sig;sig];
-
-
-LFM = [sig; x_pb; sig];
-
-Nfft2 = 4096;
+LFM = [chirp_sig; x_pb; chirp_sig];
 
 figure
 colormap jet
+Nfft2 = 2048;
 spectrogram(LFM, Nfft2, Nfft2*3/4, Nfft2, Fs, 'yaxis')
 
 
-for N = 1:length(x_pb)
-    x_bb_tild_I(N) = x_pb(N)*cos(2*pi*fc*(N-1)*Ts);
-    x_bb_tild_Q(N) = x_pb(N)*sin(2*pi*fc*(N-1)*Ts);
-    x_bb_tild(N) = x_bb_tild_I(N)+1i*x_bb_tild_Q(N);
+% Step 8:
+% passband to baseband:
+for n = 0:length(x_pb)-1
+    X_BB(n+1,1) = (2*x_pb(n+1)*cos(2*pi*fc*n*ts)) + (-2*1i*x_pb(n+1)*sin(2*pi*fc*n*ts));
 end
 
-re_x_ovf = conv(transpose(x_bb_tild), R);
+X_OVF = filter(R,1,X_BB); % match filtering 
 
-delay = (span * (lambda-1))/2;
+X = X_OVF((lambda)*(span)+1:lambda:end);
 
-re_xovf = re_x_ovf(delay:end);
+X = X(L:end);
+%X_OVF = X_OVF((lambda)*(span):end);
+%X = downsample(X_OVF,lambda-1);
 
-re_x = downsample(re_xovf,lambda);
-
-for k = 1: M+L
-    for n = 1:M+L
-        y(k) = re_x(n)*exp(-1i*2*pi*((n-1)*k)/M);
+for k = 0:M-1
+    Y_k = 0;
+    for n = 0:M-1
+        Y_k = X(n+1)*exp((-1i*2*pi*n*k)/M) + Y_k;
     end
+    Y(k+1,1) = Y_k;
 end
 
-y = transpose(y);
+figure
+plot(abs(Y))
+hold on
+Y2 = fft(x);
+
+% figure
+plot(abs(fft(x)))
