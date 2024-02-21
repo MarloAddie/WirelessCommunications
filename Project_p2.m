@@ -51,18 +51,20 @@ for n = 1:N
 end
 x = [x;zeros(L-1,1)]; % add zeros to the back
 
-x_ovf = zeros((N*(L-1+M)+L-1)*lambda,1);
-i = 1;
-for n = 0:(N*(L-1+M)+L-1)*lambda-1
-    if mod(n,lambda) == 0
-        x_ovf(n+1) = x(i);
-        i = i+1;
-    end
-end
+% x_ovf = zeros((N*(L-1+M)+L-1)*lambda,1);
+% i = 1;
+% for n = 0:(N*(L-1+M)+L-1)*lambda-1
+%     if mod(n,lambda) == 0
+%         x_ovf(n+1) = x(i);
+%         i = i+1;
+%     end
+% end
+
+x_ovf = upsample(x,24);
 
 R = rcosdesign(beta,span,lambda,'sqrt');
-%x_bb = conv(x_ovf,R);
-x_bb = filter(R,1,x_ovf);
+% x_bb = conv(x_ovf,R);
+x_bb = filter(R,1,x_ovf); % convolution
 
 
 % figure
@@ -79,42 +81,56 @@ Ts = 1/B; % sampling period
 ts = Ts/lambda;
 
 for n = 0:length(x_bb)-1
-    x_pb(n+1) = real(x_bb(n+1)*exp(1j*2*pi*fc*n*ts));
+    x_pb(n+1,1) = real(x_bb(n+1)*exp(1i*2*pi*fc*n*ts));
 end
-x_pb = transpose(x_pb);
 
 t1 = 0.05;
 f0 = fc-4000;
 f1 = fc+4000;
-beta = (f1-f0)/t1;
-i = 0;
+t= 0:1/Fs:0.05;
 
-for t = 0:1/Fs:1
-    i = i+1;
-    if t <= 0.05
-        f = f0+beta*t;
-        chirp(i) = cos(2*pi*f*t);
-    elseif t >=0.25 && t <= 0.3
-        f = f0+beta*t;
-        chirp(i) = cos(2*pi*f*t);
-    elseif t >=0.5 && t <= 0.55
-        f = f0+beta*t;
-        chirp(i) = cos(2*pi*f*t);
-    elseif t >= 0.75 && t <= 0.8
-        f = f0+beta*t;
-        chirp(i) = cos(2*pi*f*t);
-    else
-        chirp(i) = 0;
-    end
-end
+chirp_sig = chirp(t,f0,t1,f1);
+chirp_sig = [chirp_sig.';zeros((0.25*Fs)-length(chirp_sig),1)];
+chirp_sig = [chirp_sig;chirp_sig;chirp_sig;chirp_sig];
 
-t = 0:1/Fs:1;
+t = 0:1/Fs:1-1/Fs;
 figure
-plot(t, chirp)
+plot(t, chirp_sig)
 
-LFM = [chirp.'; x_pb; chirp.'];
-Nfft2 = 4096;
+LFM = [chirp_sig; x_pb; chirp_sig];
 
 figure
 colormap jet
+Nfft2 = 2048;
 spectrogram(LFM, Nfft2, Nfft2*3/4, Nfft2, Fs, 'yaxis')
+
+
+% Step 8:
+% passband to baseband:
+for n = 0:length(x_pb)-1
+    X_BB(n+1,1) = (2*x_pb(n+1)*cos(2*pi*fc*n*ts)) + (-2*1i*x_pb(n+1)*sin(2*pi*fc*n*ts));
+end
+
+X_OVF = filter(R,1,X_BB); % match filtering 
+
+X = X_OVF((lambda)*(span)+1:lambda:end);
+
+X = X(L:end);
+%X_OVF = X_OVF((lambda)*(span):end);
+%X = downsample(X_OVF,lambda-1);
+
+for k = 0:M-1
+    Y_k = 0;
+    for n = 0:M-1
+        Y_k = X(n+1)*exp((-1i*2*pi*n*k)/M) + Y_k;
+    end
+    Y(k+1,1) = Y_k;
+end
+
+figure
+plot(abs(Y))
+hold on
+Y2 = fft(x);
+
+% figure
+plot(abs(fft(x)))
