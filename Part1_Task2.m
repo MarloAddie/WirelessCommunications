@@ -14,7 +14,7 @@ N = 4; % # of OFDM symbols
 
 %% ZP-OFDM Transmitter Design & Validation:
 
-function[d_tilde,Y,LFM] = ZP_OFDM_Tx(L,M,N)
+function [d_tilde,Y,LFM] = ZP_OFDM_Tx(L,M,N)
     numBits = M*2; % # of bits to generate M QPSK symbols
     x = []; % initialize for concatenation
     
