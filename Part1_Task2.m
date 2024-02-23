@@ -1,4 +1,4 @@
-%% ECE 6961 - Project Part II
+%% ECE 6961 - Project Part I Task II
 % Emma Dingman, Collin Griswold, Marlo Esperson
 
 clear all, clc, close all
