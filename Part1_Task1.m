@@ -1,4 +1,4 @@
-%% ECE 6961 - Project Part I
+%% ECE 6961 - Project Part I Task I
 % Emma Dingman, Collin Griswold, Marlo Esperson
 
 %% CP-OFDM
