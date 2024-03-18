@@ -83,3 +83,15 @@ ybb = ybb(lambda*delay+1:end);
 
 figure
 plot(real(ybb))
+
+L = 200; % # of zeros (padding)
+k = 2048; % # of QPSK symbols
+
+for n01 = [2200:1:2400]
+    for eps1 = [-2:0.1:2]
+        for n = 0:(k+L)*lambda - 1
+            YBB_1(n+1) = ybb(n01+n)*exp(-1i*2*pi*eps1*(n01+n)*ts);
+        end
+        YBBv1 = downsample(YBB_1,lambda);
+    end
+end
