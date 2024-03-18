@@ -90,8 +90,18 @@ k = 2048; % # of QPSK symbols
 for n01 = [2200:1:2400]
     for eps1 = [-2:0.1:2]
         for n = 0:(k+L)*lambda - 1
-            YBB_1(n+1) = ybb(n01+n)*exp(-1i*2*pi*eps1*(n01+n)*ts);
+            YBB_1(n+1) = ybb(n01+n)*exp(-1i*2*pi*eps1*(n01+n)*ts); 
         end
-        YBBv1 = downsample(YBB_1,lambda);
+        YBBv1 = downsample(YBB_1,lambda); % Is this correct? (k*lambda) or lambda ????
+         
+        for m = 0:k-1
+            zm1sum = 0;
+
+             for i = 1:k+L
+                zm1sum = YBBv1(i)*exp((-1i*2*pi*m*(i-1))/k) + zm1sum;
+             end
+             Zm(m+1) = zm1sum;
+         end
+              
     end
 end
