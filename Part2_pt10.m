@@ -2,6 +2,7 @@ clear all
 close all
 clc
 
+load('ofdm_map.mat')
 %load('benchmark_parameter_174623_1472.mat');
 load('benchmark_rece_data_174623_1472.mat');
 
@@ -13,11 +14,13 @@ plot(LFM)
 fc = 24e3; % carrier frequency
 samplingRate = 256e3; %Hz
 
-YPB = bandpass(LFM, [-1000+fc, 8000+fc], samplingRate);
+%YPB = bandpass(LFM, [-1000+fc, 8000+fc], samplingRate);
+YPB = bandpass(LFM, [fc-4000, fc+4000], samplingRate);
 %YPB2 = bandpass(LFM, [fc, 8000+fc], samplingRate);
 Trx = 8.2687;  % Approximated from spectrogram
 Ttx = 8.2695; % sec
-a_hat = Ttx/Trx - 1;
+%a_hat = Ttx/Trx - 1;
+a_hat = 5e-5;
 
 % Resample
 Y_PB_re = resample(YPB,round((1+a_hat)*1E5), 1E5);
@@ -59,7 +62,7 @@ load('itc_1007_compfilter.mat')
 hcomp = h_comp;
 
 yhtilde = conv(Y_PB_re_tilde, hcomp);
-yhtilde = yhtilde(50:end);
+yhtilde = yhtilde(50+1:end);
 figure
 plot(yhtilde)
 
@@ -89,59 +92,71 @@ k = 2048; % # of QPSK symbols
 
 % Generate DFT Matrix:
 F = zeros(k,k);
-for m = 0:k-1
+for m = 0:k+L-1
     for i = 0:k+L-1
         F(m+1,i+1) = exp((-1j*2*pi*m*i)/k); % DFT Matrix
     end
 end
 
-% min_n01 = zeros(1,21);
-% n01_idx = 0;
-% for n01 = [2200:1:2400]
-%     n01_idx = n01_idx + 1;
-%     eps1_idx = 0;
-%     for eps1 = [-2:0.1:2]
-%         eps1_idx = eps1_idx +1;
-%         n_idx = transpose(n01+[0:lambda:(k+L)*lambda - 1]);
-%         YBB_1 = ybb(n_idx).*exp(-1i*2*pi*eps1*n_idx*ts); % CFO Compensation + Downsampled
-%         
-%         Z_m = F*YBB_1; % FFT
-%         P_null(n01_idx, eps1_idx) = sum((abs(Z_m)).^2);
-% 
-%         [M, idx] = min(P_null(:));
-%         [row, col] = ind2sub(size(P_null),idx);
-%         
-%         n01 = [2200:1:2400];
-%         eps1 = [-2:0.1:2];
-%         min_eps = eps1(col);
-%         min_n0 = n01(row);
-%     end
-% end
-
-
-for W = 1:21
-    n0_idx = 0;
-    if W == 2
+n0 = zeros(1,21);
+eps = zeros(1,21);
+n01_idx = 0;
+for n01 = [2200:1:2400]
+    n01_idx = n01_idx + 1;
+    eps1_idx = 0;
+    for eps1 = [-2:0.1:2]
+        eps1_idx = eps1_idx +1;
+        n_idx = transpose(n01+[0:lambda:(k+L)*lambda - 1]);
+        YBB_1 = ybb(n_idx).*exp(-1i*2*pi*eps1*n_idx*ts); % CFO Compensation + Downsampled
         
-    for n0 = min_n0(W) - (k+L)*lambda + [-2*lambda:1:2*lambda]
-        n0_idx = n0_idx + 1;
-        eps_idx = 0;
-        for eps = [-2:0.1:2]
-            eps_idx = eps_idx +1;
-            n_idx = transpose(n0+[0:lambda:(k+L)*lambda - 1]);
-            YBB = ybb(n_idx).*exp(-1i*2*pi*eps*n_idx*ts); % CFO Compensation + Downsampled
-            
-            Z_m(:,W) = F*YBB; % FFT
-            P_null(n0_idx, eps_idx) = sum((abs(Z_m)).^2);
-    
-            [M, idx] = min(P_null(:));
-            [row, col] = ind2sub(size(P_null),idx);
-            
-            n0 = [2200:1:2400];
-            eps = [-2:0.1:2];
-            min_eps(W) = eps(col);
-            min_n0(W) = n0(row);
-        end
+        Z_m = F*YBB_1; % FFT
+        P_null(n01_idx, eps1_idx) = sum((abs(Z_m(ofdm_map==0))).^2);
     end
 end
+
+[M, idx] = min(P_null(:));
+[row, col] = ind2sub(size(P_null),idx);
+
+n01 = [2200:1:2400];
+eps1 = [-2:0.1:2];
+
+min_eps = eps1(col);
+min_n01 = n01(row);
+
+n0(1) = min_n01 -(k+L)*lambda;
+
+for W = 1:21
+n01_idx = 0;
+    for n01 = n0(W) +(k+L)*lambda+[-2*lambda:1:2*lambda] 
+        n01_idx = n01_idx + 1;
+        eps1_idx = 0;
+        for eps1 = [-2:0.1:2]
+            eps1_idx = eps1_idx +1;
+            n_idx = transpose(n01+[0:lambda:(k+L)*lambda - 1]);
+            YBB_1 = ybb(n_idx).*exp(-1i*2*pi*eps1*n_idx*ts); % CFO Compensation + Downsampled
+
+            Z_m = F*YBB_1; % FFT
+            P_null2(n01_idx, eps1_idx) = sum((abs(Z_m(ofdm_map==0))).^2);
+        end
+    end
+    [M, idx] = min(P_null2(:));
+    [row, col] = ind2sub(size(P_null2),idx);
+
+    n01_v = n0(W) +(k+L)*lambda+[-2*lambda:1:2*lambda];
+    eps1_v = [-2:0.1:2];
+
+    eps(W+1) = eps1_v(col);
+    n0(W+1) = n01_v(row);
+end
+
+n0 = n0(2:end);
+eps = eps(2:end);
+%%
+for jkl = 1:length(eps)
+  n_idx = transpose(n0(jkl) +[0:lambda:(k+L)*lambda - 1]);  
+  YBB_1 = ybb(n_idx).*exp(-1i*2*pi*eps(jkl)*n_idx*ts); % CFO Compensation + Downsampled
+  Z_m(:,jkl) = F*YBB_1; % FFT
+  Z_m2(:,jkl) = Z_m(ofdm_map==0);
+end
+
 
