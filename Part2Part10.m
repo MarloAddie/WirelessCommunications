@@ -125,7 +125,7 @@ min_n01 = n01(row);
 
 n0(1) = min_n01 -(k+L)*lambda;
 
-for W = 1:1
+for W = 1:21
 n01_idx = 0;
     for n01 = n0(W) +(k+L)*lambda+[-2*lambda:1:2*lambda] 
         n01_idx = n01_idx + 1;
@@ -145,7 +145,7 @@ n01_idx = 0;
     n01_v = n0(W) +(k+L)*lambda+[-2*lambda:1:2*lambda];
     eps1_v = [-2:0.1:2];
 
-    eps(W) = eps1_v(col);
-    n0(W) = n01_v(row);
+    eps(W+1) = eps1_v(col);
+    n0(W+1) = n01_v(row);
 end
 
