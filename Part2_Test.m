@@ -19,13 +19,12 @@ figure
 plot(YPB)
 
 % Find Trx from plot:
-start_idx = 423; % estimated start index
-end_idx = 2117750; % estimated end index
-Trx = (end_idx - start_idx)/samplingRate; % estimated received signal duration
+
+Trx = 8.2641; % estimated received signal duration
 Ttx = 8.2695; % given transmitted signal duration
 
 a_hat = Ttx/Trx - 1; % estimated doppler rate
-a_hat = -1.5e-4; 
+% a_hat = 6.4856e-4; 
 
 Y_PB_re = resample(YPB,round((1+a_hat)*1E5), 1E5); % resample with a_hat
 
