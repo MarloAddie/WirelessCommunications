@@ -59,8 +59,8 @@ Fs = 192e3; % sampling rate
 ts = 1/Fs; % sampling period
 
 % Passband to Baseband:
-for n = 0:length(yhtilde)-1
-    Y_BB(n+1,1) = 2*(yhtilde(n+1)*cos(2*pi*fc*n*ts)) + 2*(-1i*yhtilde(n+1)*sin(2*pi*fc*n*ts));
+for n = 1:length(yhtilde)
+    Y_BB(n,1) = yhtilde(n)*cos(2*pi*fc*n*ts) + -1i*yhtilde(n)*sin(2*pi*fc*n*ts);
 end
 
 beta = 0.125; % roll-off factor
