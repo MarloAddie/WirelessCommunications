@@ -50,11 +50,11 @@ X4 = -1/sqrt(2) - (1/sqrt(2))*1i;
 LR = [];
 for pl = 1:length(HD)
     
-    Lb1 = log10((exp(-abs(zd(pl)-HD(pl)*X1)^2/noiseVar)+exp(-abs(zd(pl)-HD(pl)*X3)^2/noiseVar))...
-        /(exp(-abs(zd(pl)-HD(pl)*X2)^2/noiseVar)+exp(-abs(zd(pl)-HD(pl)*X4)^2/noiseVar)));
+    Lb1 = log10((exp(-norm(zd(pl)-HD(pl)*X1)^2/noiseVar)+norm(-abs(zd(pl)-HD(pl)*X3)^2/noiseVar))...
+        /(exp(-norm(zd(pl)-HD(pl)*X2)^2/noiseVar)+exp(-norm(zd(pl)-HD(pl)*X4)^2/noiseVar)));
     
-    Lb2 = log10((exp(-abs(zd(pl)-HD(pl)*X1)^2/noiseVar)+exp(-abs(zd(pl)-HD(pl)*X2)^2/noiseVar))...
-        /(exp(-abs(zd(pl)-HD(pl)*X3)^2/noiseVar)+exp(-abs(zd(pl)-HD(pl)*X4)^2/noiseVar)));
+    Lb2 = log10((exp(-norm(zd(pl)-HD(pl)*X1)^2/noiseVar)+exp(-norm(zd(pl)-HD(pl)*X2)^2/noiseVar))...
+        /(exp(-norm(zd(pl)-HD(pl)*X3)^2/noiseVar)+exp(-norm(zd(pl)-HD(pl)*X4)^2/noiseVar)));
     
     LR1 = cat(1, Lb1, Lb2);
     
