@@ -7,6 +7,7 @@ load('OFDM_PILOT.mat')
 load('ofdm_map.mat')
 %%
 load('benchmark_NoiseVar_172648_1.mat')
+load('benchmark_intermediate_172648_from_1_single_hydrophones.mat');
 load('benchmark_Zw_172648_1.mat')
 load('INTRLVR.mat')
 load('CODE.mat')
@@ -56,9 +57,9 @@ end
 
 sd = find(ofdm_map == 2);
 
-zd = z_w(sd-1);
+zd = z_w(sd);
 
-HD = Hw(sd-1);
+HD = Hw(sd);
 
 X1 = 1/sqrt(2) + (1/sqrt(2))*1i;
 X2 = -1/sqrt(2) + (1/sqrt(2))*1i;
