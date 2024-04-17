@@ -20,8 +20,8 @@ null_sub = 112;
 
 idx = find(ofdm_map ==1);
 
-z_w = bb_rece_data_172648_1474;
-Z_pw = z_w(ofdm_map==1); % Symbols after doppler compensation
+z_w = bb_rece_data_172648_1474; % Symbols after doppler compensation
+Z_pw = z_w(ofdm_map==1,:); 
 
 for nn = 1:kp
     for n = 1:L+1
@@ -43,7 +43,7 @@ end
 
 Hw = V2*hls; % Channel Gain. Freq domain. Dimension: k x (L+1)   (2048 x 200)
 
-Z_pw_null = z_w((ofdm_map == 0));
+%Z_pw_null = z_w((ofdm_map == 0),:);
 
 for kl =1:21
     
@@ -57,9 +57,9 @@ end
 
 sd = find(ofdm_map == 2);
 
-zd = z_w(sd);
+zd = z_w(sd,:);
 
-HD = Hw(sd);
+HD = Hw(sd,:);
 
 X1 = 1/sqrt(2) + (1/sqrt(2))*1i;
 X2 = -1/sqrt(2) + (1/sqrt(2))*1i;
@@ -67,66 +67,67 @@ X3 = 1/sqrt(2) - (1/sqrt(2))*1i;
 X4 = -1/sqrt(2) - (1/sqrt(2))*1i;
 
 LR = [];
-for pl = 1:length(HD)
-    
-    A = -abs(zd(pl)-HD(pl)*X1)^2/noiseVar(1);
-    B = -abs(zd(pl)-HD(pl)*X3)^2/noiseVar(1);
-    
-    Lb1_num = max(A,B)+log(1+exp(-abs(B-A)));
-    
-    A = -abs(zd(pl)-HD(pl)*X2)^2/noiseVar(1);
-    B = -abs(zd(pl)-HD(pl)*X4)^2/noiseVar(1);
-    
-    Lb1_den = max(A,B)+log(1+exp(-abs(B-A)));
-    
-    A = -abs(zd(pl)-HD(pl)*X1)^2/noiseVar(1);
-    B = -abs(zd(pl)-HD(pl)*X2)^2/noiseVar(1);
-    
-    Lb2_num = max(A,B)+log(1+exp(-abs(B-A)));
-    
-    A = -abs(zd(pl)-HD(pl)*X3)^2/noiseVar(1);
-    B = -abs(zd(pl)-HD(pl)*X4)^2/noiseVar(1);
-    
-    Lb2_den = max(A,B)+log(1+exp(-abs(B-A)));
-    
-    Lb1 = Lb1_num-Lb1_den;
-    Lb2 = Lb2_num-Lb2_den;
-    
-    LR1 = [Lb1; Lb2];
-    
-    LR = cat(1, LR, LR1);
- 
-    
-    
-    
-    
-%     Lb1 = log((exp(-norm(zd(pl)-HD(pl)*X1)^2/noiseVar)+exp(-norm(-abs(zd(pl)-HD(pl)*X3)^2/noiseVar)))...
-%         -log((exp(-norm(zd(pl)-HD(pl)*X2)^2/noiseVar)+exp(-norm(zd(pl)-HD(pl)*X4)^2/noiseVar))));
-%     
-%     Lb2 = log((exp(-norm(zd(pl)-HD(pl)*X1)^2/noiseVar)+exp(-norm(zd(pl)-HD(pl)*X2)^2/noiseVar))...
-%         -log((exp(-norm(zd(pl)-HD(pl)*X3)^2/noiseVar)+exp(-norm(zd(pl)-HD(pl)*X4)^2/noiseVar))));
-%     
-%     LR1 = cat(1, Lb1, Lb2);
-%     
-%     LR = cat(1, LR, LR1);
-%     
 
+
+
+for jkl = 1:length(noiseVar)
+
+    LRcount1 = 1;
+    LRcount2 = 2;
+
+    for pl = 1:length(HD)
+        
+        A = -abs(zd(pl,jkl)-HD(pl,jkl)*X1)^2/noiseVar(jkl);
+        B = -abs(zd(pl,jkl)-HD(pl,jkl)*X3)^2/noiseVar(jkl);
+        
+        Lb1_num = max(A,B)+log(1+exp(-abs(B-A)));
+        
+        A = -abs(zd(pl,jkl)-HD(pl,jkl)*X2)^2/noiseVar(jkl);
+        B = -abs(zd(pl,jkl)-HD(pl,jkl)*X4)^2/noiseVar(jkl);
+        
+        Lb1_den = max(A,B)+log(1+exp(-abs(B-A)));
+        
+        A = -abs(zd(pl,jkl)-HD(pl,jkl)*X1)^2/noiseVar(jkl);
+        B = -abs(zd(pl,jkl)-HD(pl,jkl)*X2)^2/noiseVar(jkl);
+        
+        Lb2_num = max(A,B)+log(1+exp(-abs(B-A)));
+        
+        A = -abs(zd(pl,jkl)-HD(pl,jkl)*X3)^2/noiseVar(jkl);
+        B = -abs(zd(pl,jkl)-HD(pl,jkl)*X4)^2/noiseVar(jkl);
+        
+        Lb2_den = max(A,B)+log(1+exp(-abs(B-A)));
+        
+        Lb1 = Lb1_num-Lb1_den;
+        Lb2 = Lb2_num-Lb2_den;
+        
+        %LR1 = [Lb1; Lb2];
+        
+        %LR = cat(1, LR, LR1);
+        LR(LRcount1, jkl) = Lb1;
+        LR(LRcount2, jkl) = Lb2;
+        LRcount1  = LRcount1 + 2;
+        LRcount2 = LRcount2 + 2;
+ 
+    end
 
 end
+
+
 
 NAME = './5G_LDPC_M10_N20_Z142_Q2_nonVer.txt';
 [address, LDPC_INFOLEN] = ldpc_mex_initial_CAPI([1420,2840,2],NAME);
 
+for i = 1:21
 
-LR_in_de = zeros(length(LR),1);
-LR_in_de(INTRLVR) = LR;
-APP_code = ldpcDecoder_CAPI(address,LR_in_de);
+    LR_in_de = zeros(length(LR(:,i)),1);
+    LR_in_de(INTRLVR) = LR(:,i);
+    APP_code(:,i) = ldpcDecoder_CAPI(address,LR_in_de);
+    
+    % Hard Decision
+    
+    est_code = (APP_code(:,i)<0);
+    bec(:,i) = sum(abs(est_code-CODE(:,i)));
 
-% Hard Decision
-
-est_code = (APP_code<0);
-bec = sum(abs(est_code-CODE(:,1)));
-
-
+end
 
 
