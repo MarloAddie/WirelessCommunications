@@ -20,19 +20,65 @@ kp = 512; % # of Subcarriers
 null_sub = 112;
 
 z_w1 = bb_rece_data_172648_1474;
-Hw1 = channelest(z_w1, ofdm_map, OFDM_PILOT);
+[Hw1,noiseVar1] = channelest(z_w1, ofdm_map, OFDM_PILOT);
 z_w2 = bb_rece_data_172648_1475;
-Hw2 = channelest(z_w2, ofdm_map, OFDM_PILOT);
+[Hw2, noiseVar2] = channelest(z_w2, ofdm_map, OFDM_PILOT);
 z_w3 = bb_rece_data_172648_1476;
-Hw3 = channelest(z_w3, ofdm_map, OFDM_PILOT);
+[Hw3, noiseVar3] = channelest(z_w3, ofdm_map, OFDM_PILOT);
+
+X1 = 1/sqrt(2) + (1/sqrt(2))*1i;
+X2 = -1/sqrt(2) + (1/sqrt(2))*1i;
+X3 = 1/sqrt(2) - (1/sqrt(2))*1i;
+X4 = -1/sqrt(2) - (1/sqrt(2))*1i;
+
+LR = [];
 
 for i = 1:21
+    LRcount1 = 1;
+    LRcount2 = 2;
     for j = 1:k
         Hk = [Hw1(j,i);Hw2(j,i);Hw3(j,i)];
         Zk = [z_w1(j,i);z_w2(j,i);z_w3(j,i)];
         Hknorm = sqrt(Hk'*Hk);
         %Hknorm(j,i) = sqrt(Hw1(j,i)'*Hw1(j,i) + Hw2(j,i)'*Hw2(j,i) + Hw3(j,i)'*Hw3(j,i));
         qk(j,i) = (Hk'*Zk)/(Hknorm);
+
+        noiseVar(i) = (1/(Hknorm)^2) * ( noiseVar1(i) * Hw1(j,i)' * Hw1(j,i) ...
+            + noiseVar1(i) * Hw2(j,i)' * Hw2(j,i)  ...
+           + noiseVar1(i) * Hw3(j,i)' * Hw3(j,i) );
+
+
+        A = -abs(qk(j,i)-Hknorm*X1)^2/noiseVar(i);
+        B = -abs(qk(j,i)-Hknorm*X3)^2/noiseVar(i);
+        
+        Lb1_num = max(A,B)+log(1+exp(-abs(B-A)));
+        
+        A = -abs(qk(j,i)-Hknorm*X2)^2/noiseVar(i);
+        B = -abs(qk(j,i)-Hknorm*X4)^2/noiseVar(i);
+        
+        Lb1_den = max(A,B)+log(1+exp(-abs(B-A)));
+        
+        A = -abs(qk(j,i)-Hknorm*X1)^2/noiseVar(i);
+        B = -abs(qk(j,i)-Hknorm*X2)^2/noiseVar(i);
+        
+        Lb2_num = max(A,B)+log(1+exp(-abs(B-A)));
+        
+        A = -abs(qk(j,i)-Hknorm*X3)^2/noiseVar(i);
+        B = -abs(qk(j,i)-Hknorm*X4)^2/noiseVar(i);
+        
+        Lb2_den = max(A,B)+log(1+exp(-abs(B-A)));
+        
+        Lb1 = Lb1_num-Lb1_den;
+        Lb2 = Lb2_num-Lb2_den;
+        
+        %LR1 = [Lb1; Lb2];
+        
+        %LR = cat(1, LR, LR1);
+        LR(LRcount1, i) = Lb1;
+        LR(LRcount2, i) = Lb2;
+        LRcount1  = LRcount1 + 2;
+        LRcount2 = LRcount2 + 2;
+
     end
 end
 
@@ -41,7 +87,9 @@ end
 
 
 
-function [Hw] = channelest(z_w, ofdm_map, OFDM_PILOT) 
+
+
+function [Hw, noiseVar] = channelest(z_w, ofdm_map, OFDM_PILOT) 
     
     k = 2048;
     L = 199;
@@ -74,5 +122,16 @@ function [Hw] = channelest(z_w, ofdm_map, OFDM_PILOT)
     Hw = V2*hls; % Channel Gain. Freq domain. Dimension: k x (L+1)   (2048 x 200)
     
     %Z_pw_null = z_w((ofdm_map == 0),:);
+
+    
+    for kl =1:21
+
+        znw = z_w(:,kl);
+        Z_pw_null = znw((ofdm_map == 0));
+        noiseVar(kl) = (1/null_sub)*sum(abs(Z_pw_null).^2);
+
+    end
+
+
 
 end
