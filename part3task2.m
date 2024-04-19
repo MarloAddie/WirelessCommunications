@@ -21,10 +21,19 @@ null_sub = 112;
 
 z_w1 = bb_rece_data_172648_1474;
 [Hw1,noiseVar1] = channelest(z_w1, ofdm_map, OFDM_PILOT);
+Hw1 = Hw1(ofdm_map==2,:);
 z_w2 = bb_rece_data_172648_1475;
+
 [Hw2, noiseVar2] = channelest(z_w2, ofdm_map, OFDM_PILOT);
+Hw2 = Hw2(ofdm_map==2,:);
 z_w3 = bb_rece_data_172648_1476;
+
 [Hw3, noiseVar3] = channelest(z_w3, ofdm_map, OFDM_PILOT);
+Hw3 = Hw3(ofdm_map==2,:);
+
+z_w1 = z_w1(ofdm_map==2,:);
+z_w2 = z_w2(ofdm_map==2,:);
+z_w3 = z_w3(ofdm_map==2,:);
 
 X1 = 1/sqrt(2) + (1/sqrt(2))*1i;
 X2 = -1/sqrt(2) + (1/sqrt(2))*1i;
@@ -36,7 +45,7 @@ LR = [];
 for i = 1:21
     LRcount1 = 1;
     LRcount2 = 2;
-    for j = 1:k
+    for j = 1:1420
         Hk = [Hw1(j,i);Hw2(j,i);Hw3(j,i)];
         Zk = [z_w1(j,i);z_w2(j,i);z_w3(j,i)];
         Hknorm = sqrt(Hk'*Hk);
@@ -44,29 +53,29 @@ for i = 1:21
         qk(j,i) = (Hk'*Zk)/(Hknorm);
 
         noiseVar(i) = (1/(Hknorm)^2) * ( noiseVar1(i) * Hw1(j,i)' * Hw1(j,i) ...
-            + noiseVar1(i) * Hw2(j,i)' * Hw2(j,i)  ...
-           + noiseVar1(i) * Hw3(j,i)' * Hw3(j,i) );
+            + noiseVar2(i) * Hw2(j,i)' * Hw2(j,i)  ...
+           + noiseVar3(i) * Hw3(j,i)' * Hw3(j,i) );
 
 
         A = -abs(qk(j,i)-Hknorm*X1)^2/noiseVar(i);
         B = -abs(qk(j,i)-Hknorm*X3)^2/noiseVar(i);
         
-        Lb1_num = max(A,B)+log(1+exp(-abs(B-A)));
+        Lb1_num = max(real(A),real(B))+log(1+exp(-abs(real(B)-real(A))));
         
         A = -abs(qk(j,i)-Hknorm*X2)^2/noiseVar(i);
         B = -abs(qk(j,i)-Hknorm*X4)^2/noiseVar(i);
         
-        Lb1_den = max(A,B)+log(1+exp(-abs(B-A)));
+        Lb1_den = max(real(A),real(B))+log(1+exp(-abs(real(B)-real(A))));
         
         A = -abs(qk(j,i)-Hknorm*X1)^2/noiseVar(i);
         B = -abs(qk(j,i)-Hknorm*X2)^2/noiseVar(i);
         
-        Lb2_num = max(A,B)+log(1+exp(-abs(B-A)));
+        Lb2_num = max(real(A),real(B))+log(1+exp(-abs(real(B)-real(A))));
         
         A = -abs(qk(j,i)-Hknorm*X3)^2/noiseVar(i);
         B = -abs(qk(j,i)-Hknorm*X4)^2/noiseVar(i);
         
-        Lb2_den = max(A,B)+log(1+exp(-abs(B-A)));
+        Lb2_den = max(real(A),real(B))+log(1+exp(-abs(real(B)-real(A))));
         
         Lb1 = Lb1_num-Lb1_den;
         Lb2 = Lb2_num-Lb2_den;
