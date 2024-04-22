@@ -19,9 +19,9 @@ L = 199;
 kp = 512; % # of Subcarriers
 null_sub = 112;
 
-%z_w1 = bb_rece_data_172648_1474;
+% z_w1 = bb_rece_data_172648_1474;
 load('Z_w1_bench.mat');
-%load('Z_w1_test.mat');
+% load('Z_w1_test.mat');
 z_w1 = Z_w;
 [Hw1,noiseVar1] = channelest(z_w1, ofdm_map, OFDM_PILOT);
 Hw1 = Hw1(ofdm_map==2,:);
@@ -32,17 +32,14 @@ z_w2 = Z_w;
 
 [Hw2, noiseVar2] = channelest(z_w2, ofdm_map, OFDM_PILOT);
 Hw2 = Hw2(ofdm_map==2,:);
-% z_w3 = bb_rece_data_172648_1476;
-load('Z_w3_bench.mat');
-% load('Z_w3_test.mat');
-z_w3 = Z_w;
 
-[Hw3, noiseVar3] = channelest(z_w3, ofdm_map, OFDM_PILOT);
-Hw3 = Hw3(ofdm_map==2,:);
+
+% [Hw3, noiseVar3] = channelest(z_w3, ofdm_map, OFDM_PILOT);
+% Hw3 = Hw3(ofdm_map==2,:);
 
 z_w1 = z_w1(ofdm_map==2,:);
 z_w2 = z_w2(ofdm_map==2,:);
-z_w3 = z_w3(ofdm_map==2,:);
+% z_w3 = z_w3(ofdm_map==2,:);
 
 X1 = 1/sqrt(2) + (1/sqrt(2))*1i;
 X2 = -1/sqrt(2) + (1/sqrt(2))*1i;
@@ -55,16 +52,14 @@ for i = 1:21
     LRcount1 = 1;
     LRcount2 = 2;
     for j = 1:1420
-        Hk = [Hw1(j,i);Hw2(j,i);Hw3(j,i)];
-        Zk = [z_w1(j,i);z_w2(j,i);z_w3(j,i)];
+        Hk = [Hw1(j,i);Hw2(j,i)];
+        Zk = [z_w1(j,i);z_w2(j,i)];
         Hknorm = sqrt(Hk'*Hk);
         %Hknorm(j,i) = sqrt(Hw1(j,i)'*Hw1(j,i) + Hw2(j,i)'*Hw2(j,i) + Hw3(j,i)'*Hw3(j,i));
         qk(j,i) = (Hk'*Zk)/(Hknorm);
 
         noiseVar(i) = (1/(Hknorm)^2) * ( noiseVar1(i) * Hw1(j,i)' * Hw1(j,i) ...
-            + noiseVar2(i) * Hw2(j,i)' * Hw2(j,i)  ...
-           + noiseVar3(i) * Hw3(j,i)' * Hw3(j,i) );
-
+            + noiseVar2(i) * Hw2(j,i)' * Hw2(j,i) );  
 
         A = -abs(qk(j,i)-Hknorm*X1)^2/noiseVar(i);
         B = -abs(qk(j,i)-Hknorm*X3)^2/noiseVar(i);
