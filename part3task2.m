@@ -5,7 +5,7 @@ addpath('C:\Users\marlo\Documents\ECE6961\WirelessCommunications\Project3files\M
 
 load('OFDM_PILOT.mat')
 load('ofdm_map.mat')
-%%
+
 load('benchmark_NoiseVar_172648_1.mat')
 load('benchmark_intermediate_172648_from_1_single_hydrophones.mat');
 load('benchmark_Zw_172648_1.mat')
@@ -13,7 +13,7 @@ load('benchmark_Zw_172648_2.mat')
 load('benchmark_Zw_172648_3.mat')
 load('INTRLVR.mat')
 load('CODE.mat')
-%%
+
 k = 2048;
 L = 199;
 kp = 512; % # of Subcarriers
@@ -92,6 +92,30 @@ for i = 1:21
 end
 
 
+
+NAME = './5G_LDPC_M10_N20_Z142_Q2_nonVer.txt';
+[address, LDPC_INFOLEN] = ldpc_mex_initial_CAPI([1420,2840,2],NAME);
+
+for i = 2:21
+
+    LR_in_de = zeros(length(LR(:,i)),1);
+    LR_in_de(INTRLVR) = LR(:,i);
+    %LR_in_de_2 = zeros(length(LR(:,i)),1);
+    %LR_in_de_2(INTRLVR) = Le_OUT(:,i);
+    APP_code(:,i) = ldpcDecoder_CAPI(address,LR_in_de);
+    %APP_code_2(:,i) = ldpcDecoder_CAPI(address,LR_in_de_2);
+    
+    % Hard Decision
+    
+    est_code(:,i) = (APP_code(:,i)<0);
+    bec(:,i) = sum(abs(est_code(:,i)-CODE(:,i)));
+
+    % est_code_2 = (APP_code_2(:,i)<0);
+    % bec_2(:,i) = sum(abs(est_code_2-CODE(:,i)));
+
+end
+
+BER = sum(bec) / 2840 / 20;
 
 
 

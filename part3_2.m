@@ -5,13 +5,13 @@ addpath('C:\Users\marlo\Documents\ECE6961\WirelessCommunications\Project3files\M
 
 load('OFDM_PILOT.mat')
 load('ofdm_map.mat')
-%%
+
 load('benchmark_NoiseVar_172648_1.mat')
 load('benchmark_intermediate_172648_from_1_single_hydrophones.mat');
 load('benchmark_Zw_172648_1.mat')
 load('INTRLVR.mat')
 load('CODE.mat')
-%%
+
 
 k = 2048;
 L = 199;
@@ -119,7 +119,7 @@ end
 NAME = './5G_LDPC_M10_N20_Z142_Q2_nonVer.txt';
 [address, LDPC_INFOLEN] = ldpc_mex_initial_CAPI([1420,2840,2],NAME);
 
-for i = 1:21
+for i = 2:21
 
     LR_in_de = zeros(length(LR(:,i)),1);
     LR_in_de(INTRLVR) = LR(:,i);
@@ -138,57 +138,8 @@ for i = 1:21
 
 end
 
+BER = sum(bec) / 2840 / 20;
+
 % figure; plot(1:length(LR_in_de_1), LR_in_de_1, '-r',...
 %              1:length(LR_in_de_2), LR_in_de_2, '--b');
 
-
-% %addpath './mex'
-% ldpc_checkLen = 128*10;
-% ldpc_codeLen = 128*20;
-% ldpc_qnumber = 2.0;
-% code_name = './forClass/5G_LDPC_M10_N20_Z128_Q2_nonVer.txt';
-% % Initialization of parameters and H matrix
-% %[address,ldpc_infoLen] = ldpc_mex_initial_CAPI([ldpc_checkLen ldpc_codeLen ldpc_qnumber], code_name);
-% [address, ldpc_infoLen] = ldpc_mex_initial_CAPI([1420,2840,2],NAME);
-% 
-% 
-% SNR_dB = [0.01 0.05 0.1 0.5 1 2 4];
-% min_wec = 100;
-% %mesg = APP_code(:,1);
-% mesg = est_code(:,2);
-% for i=1:length(SNR_dB)
-%     wec = 0; % word error number
-%     bec = 0; % bit error number
-%     bec_mesg = 0; % mesg bit error number
-%     tot = 0; % total block number
-%     while(wec<min_wec && tot < 10000)
-%         % generated message
-%         info_len = ldpc_infoLen;
-%         mesg = double(rand(info_len,1)>0.5);
-%         code = ldpcEncoder_CAPI(address, mesg);
-%         mod_code = 1 - code*2;
-%         noise_var = 10^(-SNR_dB(i)/10);
-%         r = mod_code + sqrt(noise_var)*randn(size(mod_code));
-%         prior = 2*r/noise_var;
-%         out_APP_c = ldpcDecoder_CAPI(address, prior);
-%         hard_code = (out_APP_c<0);
-%         out_APP_m = ldpc_Ext_CAPI(address, out_APP_c);
-%         hard_mesg = (out_APP_m<0);
-%         bit_mesg_err = sum(abs(hard_mesg-mesg));
-%         bit_err = sum(abs(hard_code-code));
-%         bec = bec + bit_err;
-%         bec_mesg = bec_mesg + bit_mesg_err;
-%         if bit_err ~= 0
-%             wec = wec + 1;
-%         end
-%         tot = tot + 1;
-%     end
-%     ber = bec / tot / length(code);
-%     ber_mesg = bec_mesg / tot / length(mesg);
-%     wer = wec / tot;
-%     fprintf('SNR(dB) = %f, tot = %f, ber = %f, ber_mesg = %f, wer = %f\n', SNR_dB(i), tot, ber, ber_mesg, wer);
-% end
-% 
-% 
-% 
-% 
