@@ -5,12 +5,13 @@
 clear all, clc, close all
 
 load('ofdm_map.mat') % load ofdm map
-load('benchmark_rece_data_172648_1.mat')
 
-%load('test_rece_data_173048_1472.mat'); % load received data
+load('testing_rece_data_171846_1.mat')
 
-%y = rece_data_ofdm_test; % received data
-y = rece_data_ofdm_bench; 
+
+
+y = rece_data_ofdm_test; % received data
+ 
 
 fc = 24e3; % carrier frequency
 samplingRate = 256e3; % receiver sampling rate
@@ -20,13 +21,7 @@ YPB = bandpass(y, [fc-4000, fc+4000], samplingRate); % passband filter
 figure
 plot(YPB)
 
-% Find Trx from plot:
-
-Trx = 8.2641; % estimated received signal duration
-Ttx = 8.2695; % given transmitted signal duration
-
-a_hat = Ttx/Trx - 1; % estimated doppler rate
-% a_hat = 6.4856e-4; 
+a_hat = -5E-4; % Estimated from plot
 
 Y_PB_re = resample(YPB,round((1+a_hat)*1E5), 1E5); % resample with a_hat
 
@@ -39,7 +34,6 @@ h = Ls*fir1(N,1/Ms,kaiser(N+1,7.8562));
 Y_PB_re_tilde = upfirdn(Y_PB_re, h, Ls, Ms);
 
 load('pilot_signal_for_synchronization.mat') % load pilot signal
-%load('test_rece_data_173048_1472.mat')
 
 c = OFDM_data_pre_old; % pilot signal
 
@@ -149,9 +143,4 @@ for n = 1:length(eps)
   Z_w(:,n) = F*YBB; % FFT
 end
 
-
-%% Validation:
-
-load('benchmark_parameter_174623_1472.mat')
-load('benchmark_Zw_174623_1472.mat')
 
